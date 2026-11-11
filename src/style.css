@@ -9,6 +9,7 @@
   --accent: #5b9cff;
   --accent-dim: #3d6db3;
   --danger: #e85d5d;
+  --success: #4cc38a;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.45;
 }
@@ -349,6 +350,48 @@ body {
   border-radius: 6px;
   padding: 0.4rem;
   font-size: 0.85rem;
+}
+
+.file-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.file-actions .action {
+  margin-top: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.transfer-message {
+  margin: 0;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  word-break: break-all;
+}
+
+.transfer-message.success {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.transfer-message.error {
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .export-panel .action + .action {

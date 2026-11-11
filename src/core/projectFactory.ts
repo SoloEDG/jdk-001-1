@@ -4,11 +4,15 @@ import type { CanvasSize, PixelProject } from './types'
 
 let projectCounter = 0
 
-export function createProject(name: string, canvasSize: CanvasSize = 16): PixelProject {
+export function createProjectId(): string {
   projectCounter += 1
+  return `project-${Date.now()}-${projectCounter}`
+}
+
+export function createProject(name: string, canvasSize: CanvasSize = 16): PixelProject {
   const now = Date.now()
   return {
-    id: `project-${now}-${projectCounter}`,
+    id: createProjectId(),
     name,
     canvasSize,
     frames: defaultFrames(canvasSize),

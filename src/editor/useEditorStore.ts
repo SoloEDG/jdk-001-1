@@ -3,7 +3,12 @@ import { CANVAS_SIZES } from '../core/constants'
 import { exportAllFramesPng, exportFramePng } from '../core/exportPng'
 import { addCustomColor, pushRecentColor } from '../core/paletteService'
 import { compositeLayers } from '../core/pixelGrid'
-import { createProject } from '../core/projectFactory'
+import {
+  dedupeProjectName,
+  downloadProjectFile,
+  parseProjectFile,
+} from '../core/projectFile'
+import { createProject, createProjectId } from '../core/projectFactory'
 import {
   ensureDefaultProject,
   loadPreferences,
@@ -33,6 +38,7 @@ const prefs = reactive(loadPreferences())
 const linePending = ref<LinePending | null>(null)
 const isPlaying = ref(false)
 const previewFrameIndex = ref<number | null>(null)
+const fileTransferMessage = ref<{ kind: 'error' | 'success'; text: string } | null>(null)
 
 const player = createAnimationPlayer({ isPlaying, previewFrameIndex })
 
@@ -256,6 +262,57 @@ function exportAllFrames() {
   exportAllFramesPng(p.frames, p.canvasSize, p.name)
 }
 
+function exportActiveProjectFile() {
+  const p = activeProject.value
+  if (!p) return
+  downloadProjectFile(p)
+  fileTransferMessage.value = { kind: 'success', text: `已导出项目文件「${p.name}」` }
+}
+
+async function importProjectFile(file: File) {
+  let text: string
+  try {
+    text = await file.text()
+  } catch {
+    fileTransferMessage.value = { kind: 'error', text: '文件读取失败，请重试' }
+    return
+  }
+
+  const result = parseProjectFile(text)
+  if (!result.ok) {
+    // 校验失败：保留现有项目不动，仅提示原因
+    fileTransferMessage.value = { kind: 'error', text: result.error }
+    return
+  }
+
+  // 始终生成新 id；同名时自动改名另存，绝不覆盖已有项目
+  const name = dedupeProjectName(
+    result.project.name,
+    projects.value.map((p) => p.name),
+  )
+  const renamed = name !== result.project.name
+  const imported: PixelProject = {
+    ...result.project,
+    id: createProjectId(),
+    name,
+    updatedAt: Date.now(),
+  }
+
+  projects.value = [...projects.value, imported]
+  prefs.activeProjectId = imported.id
+  persistProjects()
+  persistPrefs()
+  linePending.value = null
+  player.stop()
+
+  fileTransferMessage.value = {
+    kind: 'success',
+    text: renamed
+      ? `已导入为「${name}」（存在同名项目，未覆盖原有数据）`
+      : `已导入项目「${name}」`,
+  }
+}
+
 let editorStore: ReturnType<typeof buildEditorStore> | null = null
 
 function buildEditorStore() {
@@ -269,6 +326,7 @@ function buildEditorStore() {
     linePending,
     isPlaying,
     previewFrameIndex,
+    fileTransferMessage,
     setActiveColor,
     setTool,
     setCanvasSize,
@@ -290,6 +348,8 @@ function buildEditorStore() {
     addCustomPaletteColor,
     exportCurrentFrame,
     exportAllFrames,
+    exportActiveProjectFile,
+    importProjectFile,
   })
 }
 
